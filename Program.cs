@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Text.RegularExpressions;
 using System.Diagnostics;
-using HeyRed.Mime;
 using Newtonsoft.Json;
 using MimeKit;
 
@@ -9,6 +8,7 @@ internal static class Program
 {
     private static void Main(string[] args)
     {
+        Console.WriteLine(MimeTypes.GetMimeType("mark.md"));
         string configFile = Path.Combine(
             Environment.GetEnvironmentVariable("HOME"),
             ".config/jajaro.json"
@@ -31,9 +31,11 @@ internal static class Program
                 HandlerMaps[mimetype] = handler.Exec;
             }
         }
-        foreach (string file in args) {
+        foreach (string file in args)
+        {
             OpenFile(file);
         }
+        return;
     }
 
     private static Dictionary<string, string> HandlerMaps = new();
@@ -42,9 +44,9 @@ internal static class Program
     private static void OpenFile(string file)
     {
         string handlerExec = null;
-        foreach (KeyValuePair<string, string> entry in HandlerMaps)
+        foreach (KeyValuePair<string, string> entry in HandlerMaps.Reverse())
         {
-            if (Regex.IsMatch(MimeTypesMap.GetMimeType(file), entry.Key))
+            if (Regex.IsMatch(MimeTypes.GetMimeType(file), entry.Key))
             {
                 handlerExec = entry.Value;
                 break;
@@ -55,21 +57,43 @@ internal static class Program
             Console.WriteLine("handler not defined");
             return;
         }
-        string termPrefix = "";
-        if (Environment.GetEnvironmentVariable("TERM") is null)
-            termPrefix = Config.Term;
-        Process proc =
-            new()
+        Process proc;
+        if (Console.IsInputRedirected)
+        {
+            string termPrefix = Config.Term;
+            proc = new()
             {
                 StartInfo = new ProcessStartInfo()
                 {
-                    FileName = String.Concat(termPrefix, handlerExec),
-                    Arguments = file,
-                    WorkingDirectory = Environment.GetEnvironmentVariable("PWD"),
+                    FileName = "/bin/sh",
+                    Arguments = String.Concat(
+                        "-c \"",
+                        termPrefix,
+                        " ",
+                        handlerExec,
+                        " ",
+                        file,
+                        "\""
+                    ),
+                    // WorkingDirectory = Environment.GetEnvironmentVariable("PWD"),
                     // RedirectStandardOutput = true,
-                    UseShellExecute = false,
+                    CreateNoWindow = false,
                 }
             };
+        }
+        else
+        {
+            proc = new()
+            {
+                StartInfo = new ProcessStartInfo()
+                {
+                    FileName = "/bin/sh",
+                    Arguments = String.Concat("-c \"", handlerExec, " ", file, "\""),
+                    // WorkingDirectory = Environment.GetEnvironmentVariable("PWD"),
+                    // RedirectStandardOutput = true,
+                }
+            };
+        }
         proc.Start();
         // Console.WriteLine(proc.StartInfo.FileName);
         proc.WaitForExit();
