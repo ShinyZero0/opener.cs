@@ -1,0 +1,21 @@
+{
+    "Term": "kitty --class floatwin --",
+    "Handlers": [
+        {
+            "Types": [
+                ".*/.*"
+            ],
+            "Exec": "nvim",
+            "Term": true
+        },
+        {
+            "Types": [
+                "application/x-compressed-tar",
+                "application/x-bzip-compressed-tar",
+                "application/zip"
+            ],
+            "Exec": "atool -x",
+            "Term": true
+        }
+    ]
+}
