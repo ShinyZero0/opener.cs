@@ -8,7 +8,6 @@ internal static class Program
 {
     private static void Main(string[] args)
     {
-        Console.WriteLine(MimeTypes.GetMimeType("mark.md"));
         string configFile = Path.Combine(
             Environment.GetEnvironmentVariable("HOME"),
             ".config/jajaro.json"
@@ -23,12 +22,19 @@ internal static class Program
             Console.WriteLine("Create a config file in ~/.config/jajaro.json please");
             return;
         }
-        Config = JsonConvert.DeserializeObject<ConfigFile>(raw);
+        try
+        {
+            Config = JsonConvert.DeserializeObject<ConfigFile>(raw);
+        }
+        catch (Exception exc)
+        {
+            Console.WriteLine($"Problem with your config:\n{exc}");
+        }
         foreach (Handler handler in Config.Handlers)
         {
             foreach (string mimetype in handler.Types)
             {
-                HandlerMaps[mimetype] = handler.Exec;
+                HandlerMaps[mimetype] = handler;
             }
         }
         foreach (string file in args)
@@ -38,27 +44,27 @@ internal static class Program
         return;
     }
 
-    private static Dictionary<string, string> HandlerMaps = new();
+    private static Dictionary<string, Handler> HandlerMaps = new();
     private static ConfigFile Config;
 
-    private static void OpenFile(string file)
+    private static void OpenFile(string fileName)
     {
-        string handlerExec = null;
-        foreach (KeyValuePair<string, string> entry in HandlerMaps.Reverse())
+        Handler? handler = null;
+        foreach (KeyValuePair<string, Handler> entry in HandlerMaps.Reverse())
         {
-            if (Regex.IsMatch(MimeTypes.GetMimeType(file), entry.Key))
+            if (Regex.IsMatch(MimeTypes.GetMimeType(fileName), entry.Key))
             {
-                handlerExec = entry.Value;
+                handler = entry.Value;
                 break;
             }
         }
-        if (handlerExec is null)
+        if (handler is null)
         {
             Console.WriteLine("handler not defined");
             return;
         }
         Process proc;
-        if (Console.IsInputRedirected)
+        if (Console.IsInputRedirected && handler.Term)
         {
             string termPrefix = Config.Term;
             proc = new()
@@ -66,17 +72,7 @@ internal static class Program
                 StartInfo = new ProcessStartInfo()
                 {
                     FileName = "/bin/sh",
-                    Arguments = String.Concat(
-                        "-c \"",
-                        termPrefix,
-                        " ",
-                        handlerExec,
-                        " ",
-                        file,
-                        "\""
-                    ),
-                    // WorkingDirectory = Environment.GetEnvironmentVariable("PWD"),
-                    // RedirectStandardOutput = true,
+                    Arguments = String.Join(' ', "-c \"", termPrefix, handler.Exec, fileName, "\""),
                     CreateNoWindow = false,
                 }
             };
@@ -88,9 +84,7 @@ internal static class Program
                 StartInfo = new ProcessStartInfo()
                 {
                     FileName = "/bin/sh",
-                    Arguments = String.Concat("-c \"", handlerExec, " ", file, "\""),
-                    // WorkingDirectory = Environment.GetEnvironmentVariable("PWD"),
-                    // RedirectStandardOutput = true,
+                    Arguments = String.Join(' ', "-c \"", handler.Exec, fileName, "\""),
                 }
             };
         }
@@ -104,6 +98,7 @@ public class Handler
 {
     public string[] Types;
     public string Exec;
+    public bool Term = false;
 
     // public string TermExec;
 
