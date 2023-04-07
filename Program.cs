@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using System.Diagnostics;
-using Newtonsoft.Json;
+// using Newtonsoft.Json;
 using MimeKit;
 
 internal static class Program
@@ -24,7 +26,8 @@ internal static class Program
         }
         try
         {
-            Config = JsonConvert.DeserializeObject<ConfigFile>(raw);
+            // Config = JsonConvert.DeserializeObject<ConfigFile>(raw);
+            Config = JsonSerializer.Deserialize<ConfigFile>(raw, SourceGenerationContext.Default.ConfigFile);
         }
         catch (Exception exc)
         {
@@ -94,10 +97,15 @@ internal static class Program
     }
 }
 
-public class Handler
+public partial class Handler
 {
+    [JsonInclude]
     public string[] Types;
+
+    [JsonInclude]
     public string Exec;
+
+    [JsonInclude]
     public bool Term = false;
 
     // public string TermExec;
@@ -107,6 +115,15 @@ public class Handler
 
 public struct ConfigFile
 {
+    [JsonInclude]
     public string Term;
+
+    [JsonInclude]
     public Handler[] Handlers;
+}
+[JsonSourceGenerationOptions(WriteIndented = true)]
+[JsonSerializable(typeof(ConfigFile))]
+[JsonSerializable(typeof(Handler))]
+internal partial class SourceGenerationContext : JsonSerializerContext
+{
 }
