@@ -6,14 +6,11 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <PublishSingleFile>true</PublishSingleFile>
-    <AssemblyName>jajaro</AssemblyName>
-    <!-- <PublishAot>true</PublishAot> -->
+    <AssemblyName>opener</AssemblyName>
+    <InvariantGlobalization>true</InvariantGlobalization>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="MimeKit" Version="3.6.1" />
-    <!-- <PackageReference Include="MimeTypesMap" Version="1.0.8" /> -->
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
   </ItemGroup>
 
 </Project>
