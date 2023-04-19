@@ -1,7 +1,7 @@
 [Desktop Entry]
-Name=opener.cs
+Name=opener
 GenericName=Resource opener
 Terminal=false
-Exec=opener.cs %F
+Exec=opener %F
 Type=Application
 Categories=Utility;

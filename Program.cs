@@ -36,10 +36,10 @@ internal static class Program
                     RegexHandlers[new RegexPattern(regex)] = handler;
                 }
             if (handler.GlobPatterns != null)
-            foreach (string glob in handler.GlobPatterns)
-            {
-                RegexHandlers[new GlobPattern(glob)] = handler;
-            }
+                foreach (string glob in handler.GlobPatterns)
+                {
+                    RegexHandlers[new GlobPattern(glob)] = handler;
+                }
         }
         OpenFiles(args);
         return 0;
@@ -72,46 +72,31 @@ internal static class Program
                 return;
             }
         }
+
+        Dictionary<string, string?> handlerExec = new();
+
+        handlerExec["termPrefix"] = Console.IsInputRedirected ? Config.Term : null;
+
+        handlerExec["exec"] = handlerTuple.Item2.Exec;
+        handlerExec["files"] = String.Join(' ', fileNames.Select(n => $"'{n}'"));
+
+        handlerExec["bgPostfix"] = !handlerTuple.Item2.Term ? "&" : null;
+
         Process proc;
-        if (Console.IsInputRedirected && handlerTuple.Item2.Term)
+        proc = new()
         {
-            string termPrefix = Config.Term;
-            proc = new()
+            StartInfo = new ProcessStartInfo()
             {
-                StartInfo = new ProcessStartInfo()
-                {
-                    FileName = "/bin/sh",
-                    Arguments = String.Join(
-                        ' ',
-                        "-c \"",
-                        termPrefix,
-                        handlerTuple.Item2.Exec,
-                        string.Join(' ', fileNames),
-                        "\""
-                    ),
-                    CreateNoWindow = false,
-                }
-            };
-        }
-        else
-        {
-            proc = new()
-            {
-                StartInfo = new ProcessStartInfo()
-                {
-                    FileName = "/bin/sh",
-                    Arguments = String.Join(
-                        ' ',
-                        "-c \"",
-                        handlerTuple.Item2.Exec,
-                        string.Join(' ', fileNames),
-                        "\""
-                    ),
-                }
-            };
-        }
+                FileName = "/bin/sh",
+                Arguments = String.Concat(
+                    "-c \"",
+                    string.Join(' ', handlerExec.Where(p => p.Value != null).Select(p => p.Value)),
+                    "\""
+                ),
+                CreateNoWindow = !Console.IsInputRedirected
+            }
+        };
         proc.Start();
-        // Console.WriteLine(proc.StartInfo.FileName);
         proc.WaitForExit();
     }
 }
