@@ -13,4 +13,8 @@
   <ItemGroup>
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Glob" Version="1.1.9" />
+  </ItemGroup>
+
 </Project>

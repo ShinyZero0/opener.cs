@@ -3,6 +3,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using System.Diagnostics;
+using GlobExpressions;
 
 internal static class Program
 {
@@ -29,24 +30,30 @@ internal static class Program
 
         foreach (Handler handler in Config.Handlers.Reverse())
         {
-            foreach (string regex in handler.Types)
+            if (handler.RegexPatterns != null)
+                foreach (string regex in handler.RegexPatterns)
+                {
+                    RegexHandlers[new RegexPattern(regex)] = handler;
+                }
+            if (handler.GlobPatterns != null)
+            foreach (string glob in handler.GlobPatterns)
             {
-                RegexHandlers[regex] = handler;
+                RegexHandlers[new GlobPattern(glob)] = handler;
             }
         }
         OpenFiles(args);
         return 0;
     }
 
-    private static Dictionary<string, Handler> RegexHandlers = new();
+    private static Dictionary<RegexPattern, Handler> RegexHandlers = new();
     private static ConfigFile Config;
 
     private static void OpenFiles(string[] fileNames)
     {
-        Tuple<string, Handler>? handlerTuple = null;
-        foreach (KeyValuePair<string, Handler> entry in RegexHandlers)
+        Tuple<RegexPattern, Handler>? handlerTuple = null;
+        foreach (KeyValuePair<RegexPattern, Handler> entry in RegexHandlers)
         {
-            if (Regex.IsMatch(fileNames[0], entry.Key))
+            if (entry.Key.IsMatch(fileNames[0]))
             {
                 handlerTuple = new(entry.Key, entry.Value);
                 break;
@@ -59,7 +66,7 @@ internal static class Program
         }
         foreach (string fileName in fileNames)
         {
-            if (!Regex.IsMatch(fileName, handlerTuple.Item1))
+            if (!handlerTuple.Item1.IsMatch(fileName))
             {
                 Console.WriteLine("These files have different handlers!");
                 return;
@@ -109,10 +116,13 @@ internal static class Program
     }
 }
 
-public partial class Handler
+public class Handler
 {
     [JsonInclude]
-    public string[] Types;
+    public string[]? RegexPatterns;
+
+    [JsonInclude]
+    public string[]? GlobPatterns;
 
     [JsonInclude]
     public string Exec;
@@ -130,6 +140,32 @@ public class ConfigFile
 
     [JsonInclude]
     public Handler[] Handlers;
+}
+
+public class RegexPattern
+{
+    public RegexPattern(string pattern)
+    {
+        _pattern = pattern;
+    }
+
+    protected string _pattern;
+
+    public virtual bool IsMatch(string fileName)
+    {
+        return Regex.IsMatch(fileName, _pattern);
+    }
+}
+
+public class GlobPattern : RegexPattern
+{
+    public GlobPattern(string pattern)
+        : base(pattern) { }
+
+    public override bool IsMatch(string fileName)
+    {
+        return Glob.IsMatch(fileName, _pattern);
+    }
 }
 
 // some magic for AOT
