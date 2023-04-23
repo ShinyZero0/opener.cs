@@ -41,6 +41,11 @@ internal static class Program
                     RegexHandlers[new GlobPattern(glob)] = handler;
                 }
         }
+        if (args[0] == "-q")
+		{
+			PreviewFiles(args.Skip(1));
+			return 0;
+		}
         OpenFiles(args);
         return 0;
     }
@@ -48,12 +53,20 @@ internal static class Program
     private static Dictionary<RegexPattern, Handler> RegexHandlers = new();
     private static ConfigFile Config;
 
-    private static void OpenFiles(string[] fileNames)
+    private static void PreviewFiles(IEnumerable<string> fileNames)
+    {
+        var handlerTuple = _getHandler(fileNames);
+        if (handlerTuple == null)
+            return;
+        Console.WriteLine(handlerTuple.Item2.Exec);
+    }
+
+    private static Tuple<RegexPattern, Handler>? _getHandler(IEnumerable<string> fileNames)
     {
         Tuple<RegexPattern, Handler>? handlerTuple = null;
         foreach (KeyValuePair<RegexPattern, Handler> entry in RegexHandlers)
         {
-            if (entry.Key.IsMatch(fileNames[0]))
+            if (entry.Key.IsMatch(fileNames.ToList()[0]))
             {
                 handlerTuple = new(entry.Key, entry.Value);
                 break;
@@ -62,20 +75,28 @@ internal static class Program
         if (handlerTuple is null)
         {
             Console.WriteLine("handler not defined");
-            return;
+            return null;
         }
         foreach (string fileName in fileNames)
         {
             if (!handlerTuple.Item1.IsMatch(fileName))
             {
                 Console.WriteLine("These files have different handlers!");
-                return;
+                return null;
             }
         }
+        return handlerTuple;
+    }
 
+    private static void OpenFiles(string[] fileNames)
+    {
+        var handlerTuple = _getHandler(fileNames);
+        if (handlerTuple == null)
+            return;
         Dictionary<string, string?> handlerExec = new();
 
-        handlerExec["termPrefix"] = Console.IsInputRedirected ? Config.Term : null;
+        handlerExec["termPrefix"] =
+            Console.IsInputRedirected && handlerTuple.Item2.Term ? Config.Term : null;
 
         handlerExec["exec"] = handlerTuple.Item2.Exec;
         handlerExec["files"] = String.Join(' ', fileNames.Select(n => $"'{n}'"));

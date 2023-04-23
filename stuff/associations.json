@@ -1,21 +1,40 @@
 {
-    "Term": "kitty --class floatwin --",
-    "Handlers": [
-        {
-            "Types": [
-                ".*/.*"
-            ],
-            "Exec": "nvim",
-            "Term": true
-        },
-        {
-            "Types": [
-                "application/x-compressed-tar",
-                "application/x-bzip-compressed-tar",
-                "application/zip"
-            ],
-            "Exec": "atool -x",
-            "Term": true
-        }
-    ]
+  "Term": "kitty --class floatwin --",
+  "Handlers": [
+    {
+      "GlobPatterns": [
+        "*"
+      ],
+      "Exec": "nvim",
+      "Term": true
+    },
+    {
+      "GlobPatterns": [
+        "*.tar*",
+        "*.gz",
+        "*.zip"
+      ],
+      "Exec": "atool -x",
+      "Term": true
+    },
+    {
+      "RegexPatterns": [
+        "^https?://.*"
+      ],
+      "Exec": "firefox-devedition",
+      "Term": false
+    },
+    {
+      "GlobPatterns": [
+        "*.png",
+        "*.jp?g",
+        "*.webm",
+        "*.gif"
+      ],
+      "Exec": "imv"
+    },
+    {
+      "Exec": "mpv"
+    }
+  ]
 }
