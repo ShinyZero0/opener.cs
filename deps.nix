@@ -3,4 +3,5 @@
 
 { fetchNuGet }: [
   (fetchNuGet { pname = "Microsoft.DotNet.ILCompiler"; version = "7.0.5"; sha256 = "0jcn9lzx6jz5vk7da3w3sx7kaq546przk16534jgjsq9k5nnnzpl"; })
+  (fetchNuGet { pname = "Glob"; version = "1.1.9"; sha256 = "sha256-o3igdoWYiatTNlvBA6UrhZVLweh6qcY7CcQtILCC4uA="; })
 ]
